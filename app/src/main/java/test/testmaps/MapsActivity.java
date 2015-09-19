@@ -81,6 +81,7 @@ public class MapsActivity extends FragmentActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_add) {
             Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
             return true;
         }
 
