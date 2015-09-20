@@ -9,7 +9,15 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.content.Intent;
+import android.widget.EditText;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,23 +25,37 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class MapsActivity extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
-
-
+    public final String arrayName = "The current available venues are:";
+    public Location prevLoc;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+
         // Acquire a reference to the system Location Manager
         LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         // Define a listener that responds to location updates
+        try {
+            prevLoc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        }
+        catch (SecurityException e) {
+            e.printStackTrace();
+        }
         LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Called when a new location is found by the network location provider.
-                moveMarker(location);
+                if (prevLoc.distanceTo(location) > 50)
+                    moveMarker(location);
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {}
@@ -43,14 +65,13 @@ public class MapsActivity extends FragmentActivity {
             public void onProviderDisabled(String provider) {}
         };
 
-// Register the listener with the Location Manager to receive location updates
         try {
             locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         }
         catch (SecurityException e) {
             e.printStackTrace();
         }
-//        setUpMapIfNeeded();
+
     }
 
     @Override
@@ -108,6 +129,43 @@ public class MapsActivity extends FragmentActivity {
         mMap.addMarker(new MarkerOptions().position(curPos));
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(curPos, 15);
         mMap.moveCamera(cameraUpdate);
+
+        String url = "http://52.89.79.85:5000/List";
+
+        JsonObjectRequest jsonRequest = new JsonObjectRequest
+                (Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        // the response is already constructed as a JSONObject!
+                        try {
+                            JSONArray arr = response.getJSONArray(arrayName);
+                            double latitude;
+                            double longitude;
+                            for (int i = 0; i < arr.length(); i++)
+                            {
+                                JSONObject food = arr.getJSONObject(i);
+                                String name = food.getString("name");
+                                String content = food.getString("content");
+                                String coords[] = arr.getJSONObject(i).getString("coordinates").split(", ");
+                                latitude = Double.parseDouble(coords[0]);
+                                longitude = Double.parseDouble(coords[1]);
+                                System.out.println(coords[0] + ", " + coords[1]);
+                                mMap.addMarker(new MarkerOptions().title(name)
+                                        .snippet(content).position(new LatLng(latitude, longitude)));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }, new Response.ErrorListener() {
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                    }
+                });
+
+        Volley.newRequestQueue(this).add(jsonRequest);
     }
 
     public boolean onOptionsItemSelected(MenuItem item) {
