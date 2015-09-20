@@ -2,7 +2,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools" tools:context="test.testmaps.MapsActivity">
     <item android:id="@+id/action_add"
-        android:title="Add new post" app:showAsAction="always"/>
+        android:title="Post" app:showAsAction="always"/>
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
 </menu>
