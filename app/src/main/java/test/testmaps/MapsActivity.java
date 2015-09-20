@@ -33,7 +33,7 @@ public class MapsActivity extends FragmentActivity {
 
     private GoogleMap mMap; // Might be null if Google Play services APK is not available.
     public final String arrayName = "The current available venues are:";
-    public Location prevLoc;
+    public Location prevLoc = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,17 +45,13 @@ public class MapsActivity extends FragmentActivity {
         // Acquire a reference to the system Location Manager
         LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         // Define a listener that responds to location updates
-        try {
-            prevLoc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-        }
-        catch (SecurityException e) {
-            e.printStackTrace();
-        }
         LocationListener locationListener = new LocationListener() {
             public void onLocationChanged(Location location) {
                 // Called when a new location is found by the network location provider.
-                if (prevLoc.distanceTo(location) > 50)
+                if (prevLoc == null || prevLoc.distanceTo(location) > 50) {
                     moveMarker(location);
+                    prevLoc = location;
+                }
             }
 
             public void onStatusChanged(String provider, int status, Bundle extras) {}
